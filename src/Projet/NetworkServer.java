@@ -1,4 +1,4 @@
-package Projet;
+/*package Projet;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -34,4 +34,20 @@ public class NetworkServer {
             }
         }).start();
     }
+}*/
+package Projet;
+
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+public class NetworkServer {
+
+    private BlockingQueue<Message> queue = new LinkedBlockingQueue<>();
+
+    public NetworkServer(int port) {
+        new ReceiverThread(port, queue).start();
+        new ProcessorThread(queue).start();
+    }
 }
+
+

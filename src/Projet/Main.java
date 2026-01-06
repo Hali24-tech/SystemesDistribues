@@ -1,4 +1,4 @@
-package Projet;
+/*package Projet;
 
 public class Main {
 
@@ -17,6 +17,26 @@ public class Main {
 
         NetworkClient.sendTo(node1, "Hello Node 1 from Node 2");
         NetworkClient.sendTo(node2, "Hello Node 2 from Node 1");
+    }
+}*/
+
+package Projet;
+
+public class Main {
+
+    public static void main(String[] args) throws Exception {
+
+        Node node1 = new Node(1, "127.0.0.1", 5001);
+        Node node2 = new Node(2, "127.0.0.1", 5002);
+
+        new NetworkServer(node1.getPort());
+        new NetworkServer(node2.getPort());
+
+        Thread.sleep(1000);
+
+        NetworkClient.sendTo(node1, "Hello Node1");
+        NetworkClient.sendTo(node2, "Hello Node2");
+        NetworkClient.sendTo(node1, "Second message");
     }
 }
 
