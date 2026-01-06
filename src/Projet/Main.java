@@ -44,3 +44,27 @@ public class Main {
         Thread.sleep(2000);
     }
 }
+
+/*Explication de la procedure de LamportClock
+
+Node1 clock = 0
+Node2 clock = 0
+
+Event 1: Node1 sends to Node2
+
+Node1: tick() → clock becomes 1
+Sends message with T=1
+Node2 receives: update(1) → clock becomes max(0,1)+1 = 2
+
+Event 2: Node2 sends to Node1
+
+Node2: tick() → clock becomes 3 (was 2, now incremented)
+Sends message with T=3
+Node1 receives: update(3) → clock becomes max(1,3)+1 = 4
+
+Event 3: Node1 sends to Node2 again
+
+Node1: tick() → clock becomes 5 (was 4, now incremented)
+Sends message with T=5
+Node2 receives: update(5) → clock becomes max(2,5)+1 = 6
+ */
