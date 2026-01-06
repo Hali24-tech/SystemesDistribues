@@ -35,8 +35,7 @@ public class NetworkServer {
         }).start();
     }
 }*/
-package Projet;
-
+/*package Projet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -46,6 +45,19 @@ public class NetworkServer {
 
     public NetworkServer(int port) {
         new ReceiverThread(port, queue).start();
+        new ProcessorThread(queue).start();
+    }
+}*/
+
+package Projet;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+
+public class NetworkServer {
+    private BlockingQueue<Message> queue = new LinkedBlockingQueue<>();
+    
+    public NetworkServer(int port, LamportClock clock) {
+        new ReceiverThread(port, queue, clock).start();
         new ProcessorThread(queue).start();
     }
 }

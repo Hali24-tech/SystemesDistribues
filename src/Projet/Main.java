@@ -23,20 +23,24 @@ public class Main {
 package Projet;
 
 public class Main {
-
     public static void main(String[] args) throws Exception {
-
         Node node1 = new Node(1, "127.0.0.1", 5001);
         Node node2 = new Node(2, "127.0.0.1", 5002);
 
-        new NetworkServer(node1.getPort());
-        new NetworkServer(node2.getPort());
+        new NetworkServer(node1.getPort(), node1.getClock());
+        new NetworkServer(node2.getPort(), node2.getClock());
 
         Thread.sleep(1000);
 
-        NetworkClient.sendTo(node1, "Hello Node1");
-        NetworkClient.sendTo(node2, "Hello Node2");
-        NetworkClient.sendTo(node1, "Second message");
+        // Node1 sends to Node2
+        NetworkClient.sendTo(node1, node2, "Hello from Node1");
+        
+        // Node2 sends to Node1
+        NetworkClient.sendTo(node2, node1, "Hello from Node2");
+        
+        // Node1 sends another message to Node2
+        NetworkClient.sendTo(node1, node2, "Second message from Node1");
+        
+        Thread.sleep(2000);
     }
 }
-
