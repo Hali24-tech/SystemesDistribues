@@ -1,17 +1,26 @@
 package Projet;
 
-import java.io.PrintWriter;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 
 public class NetworkClient {
 
-    public static void sendTo(Node node, String message) {
+    public static void sendTo(Node destination, Message message) {
         try (
-            Socket socket = new Socket(node.getIp(), node.getPort());
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true)
+            Socket socket = new Socket(destination.getIp(), destination.getPort());
+            ObjectOutputStream out =
+                    new ObjectOutputStream(socket.getOutputStream())
         ) {
-            out.println(message);
-            System.out.println("[Sent to Node " + node.getId() + "] " + message);
+            out.writeObject(message);
+            out.flush();
+
+            System.out.println(
+                "[Sent] From Node " + message.senderId +
+                " to Node " + destination.getId() +
+                " : \"" + message.content + "\" VC=" +
+                java.util.Arrays.toString(message.vectorClock)
+            );
+
         } catch (Exception e) {
             e.printStackTrace();
         }
