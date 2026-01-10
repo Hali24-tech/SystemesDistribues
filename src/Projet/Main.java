@@ -1,71 +1,95 @@
 package Projet;
 
-import java.util.Arrays;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 
 public class Main {
-
-    public static void main(String[] args) throws InterruptedException {
-
-      
-        Node node0 = new Node(0, "127.0.0.1", 5001, 3);
-        Node node1 = new Node(1, "127.0.0.1", 5002, 3);
-        Node node2 = new Node(2, "127.0.0.1", 5003, 3);
-
-        List<Node> allNodes = Arrays.asList(node0, node1, node2);
-
-        
-        new NetworkServer(node0).start();
-        new NetworkServer(node1).start();
-        new NetworkServer(node2).start();
-
-        Thread.sleep(1000); 
-
-        System.out.println("STEP 1: Node 0 sends M1 : ");
-        node0.broadcast(allNodes, "M1 from Node 0");
-
-        Thread.sleep(500); 
-
-        System.out.println("\n STEP 2: Node 1 sends M2 :");
-        node1.broadcast(allNodes, "M2 from Node 1");
-
-        Thread.sleep(500); 
-
-        System.out.println("\n STEP 3: Node 2 sends M3 :");
-        node2.broadcast(allNodes, "M3 from Node 2");
-
-      
-        System.out.println("\n STEP 4: Simulate Node 2 receiving M2 BEFORE M1 :");
-
-       
-        Message m1 = new Message(node0.getId(), "M1 from Node 0", node0.getVectorClock().copy());
-        Message m2 = new Message(node1.getId(), "M2 from Node 1", node1.getVectorClock().copy());
-
-     
-        System.out.println("\n[FORCED DELIVERY] Node 2 receives M2 first");
-        node2.getBuffer().add(m2); 
-        node2.getBuffer().forEach(msg ->
-                System.out.println("[BUFFERED] Node 2 buffered message from Node " + msg.senderId)
-        );
-
-
-        System.out.println("\n[FORCED DELIVERY] Node 2 receives M1 now");
-        if (node2.canDeliver(m1)) {
-            System.out.println("[DELIVERED] Node 2 delivered M1: " + m1.content);
-            node2.getVectorClock().update(new VectorClock(m1.vectorClock));
-        } else {
-            node2.getBuffer().add(m1);
+    public static void main(String[] args) {
+        if (args.length < 2) {
+            System.out.println("Usage: java Projet.Main <nodeId> <configFilePath>");
+            return;
         }
-
- 
-        System.out.println("\n[CHECK BUFFER] Node 2 attempts delivery from buffer");
-        node2.getBuffer().removeIf(msg -> {
-            if (node2.canDeliver(msg)) {
-                System.out.println("[DELIVERED FROM BUFFER] Node 2 delivered: " + msg.content);
-                node2.getVectorClock().update(new VectorClock(msg.vectorClock));
-                return true;
+        int myId = Integer.parseInt(args[0]);
+        String configPath = args[1];
+        List<Node> allNodes = new ArrayList<>();
+        // Pas 1 : Lecture de la configuration
+        try (Scanner scanner = new Scanner(new File(configPath))) {
+            while (scanner.hasNext()) {
+                if (scanner.hasNextInt()) {
+                    int id = scanner.nextInt();
+                    String ip = scanner.next();
+                    int port = scanner.nextInt();
+                    allNodes.add(new Node(id, ip, port, 0));
+                } else {
+                    scanner.next(); 
+                }
             }
-            return false;
-        });
+        } catch (FileNotFoundException e) {
+            System.err.println("Config file not found: " + configPath);
+            return;
+        }
+        int totalNodes = allNodes.size();
+        System.out.println("Configuration loaded. Total nodes: " + totalNodes);
+        // Pas 2 : Identifier mon noeud et l'initialiser correctement
+        Node me = null;
+        for (int i = 0; i < allNodes.size(); i++) {
+            Node n = allNodes.get(i);
+            if (n.getId() == myId) {
+                me = new Node(n.getId(), n.getIp(), n.getPort(), totalNodes);
+                allNodes.set(i, me); 
+                break;
+            }
+        }
+        if (me == null) {
+            System.err.println("Node ID " + myId + " not found in config.");
+            return;
+        }
+        // Pas 3 : Demarrer le serveur
+        new NetworkServer(me).start();
+        // Pas 4 : CLI
+        try (Scanner input = new Scanner(System.in)) {
+            System.out.println("Node " + me.getId() + " ready. Commands: send <text>, status, exit");
+            while (true) {
+                System.out.print("[" + me.getId() + "]> ");
+                String line = input.nextLine().trim();
+                if (line.isEmpty())
+                    continue;
+                String[] parts = line.split("\\s+", 2);
+                String cmd = parts[0];
+                switch (cmd.toLowerCase()) {
+                    case "exit":
+                        System.out.println("Shutting down.");
+                        System.exit(0);
+                        break;
+                    case "status":
+                        System.out.println("=== Node Status ===");
+                        System.out.println("ID: " + me.getId());
+                        System.out.println("Vector Clock: " + me.getVectorClock());
+                        System.out.println("Buffer size: " + me.getBuffer().size());
+                        if (!me.getBuffer().isEmpty()) {
+                            System.out.println("Buffered Messages:");
+                            for (Message m : me.getBuffer()) {
+                                System.out.println("  From " + m.senderId + ": " + m.content + " "
+                                        + java.util.Arrays.toString(m.vectorClock));
+                            }
+                        }
+                        System.out.println("===================");
+                        break;
+                    case "send":
+                        if (parts.length < 2) {
+                            System.out.println("Usage: send <message text>");
+                        } else {
+                            String content = parts[1];
+                            me.broadcast(allNodes, content);
+                        }
+                        break;
+                    default:
+                        System.out.println("Unknown command. commands: send, status, exit");
+                }
+            }
+        }
     }
 }
